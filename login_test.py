@@ -8,6 +8,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+def is_exis_span(element):
+    return element.name == 'span' and 'EXIS' in element.get_text()
+
 def decode(text):
     return text.encode(sys.stdout.encoding, errors = 'replace').decode(sys.stdout.encoding)
 
@@ -35,7 +38,7 @@ def login(driver):
     print('Login successful')
 
 def scrape(driver, lista_de_busqueda):
-    
+
     login(driver)
     
     for search_query in lista_de_busqueda:
@@ -43,15 +46,39 @@ def scrape(driver, lista_de_busqueda):
         search_input.clear()
         search_input.send_keys(search_query)
         search_input.send_keys(Keys.ENTER)
-        wait = WebDriverWait(driver, 100)
-        wait
-    
+        item = WebDriverWait(driver,10).until(EC.visibility_of_element_located((By.ID, 'get-pedidos')))
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        stock_elements = soup.find_all('span', class_='mdl-card__stock')
+        
+        for stock_element in stock_elements:
+            exis_span = soup.find(is_exis_span)
+
+            if exis_span:       
+                # Extract the text content of the span element
+                stock_text = exis_span.get_text(strip=True)
+
+                # Split the text to separate "EXIS" and the numeric value
+                exis_text = ""
+                numeric_value = ""
+                for char in stock_text:
+                    if char.isdigit():
+                        numeric_value += char
+                    else:
+                        exis_text += char
+
+                stock_amount = numeric_value.strip()
+            
+            if stock_amount != '0':
+                print("Existen ", stock_amount, " en stock.")
+            else:
+                print("No hay productos en stock")
+
     
 
 if __name__ == '__main__':
     # Inicialización del driver
     driver = webdriver.Chrome()
-    lista = [1,2,3]
+    lista = ['100-100000252BOX','BX8070811400', 'BX8070811700K']
     scrape(driver, lista)
 
     # CPU array catcher
