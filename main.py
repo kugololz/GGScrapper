@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 import requests
 import pandas as pd
 import sys
-
+#change
 def safe_decode(text):
     return text.encode(sys.stdout.encoding, errors='replace').decode(sys.stdout.encoding)
 
