@@ -77,7 +77,8 @@ def scrape(driver, lista_de_busqueda):
 
 if __name__ == '__main__':
     # Inicialización del driver
-    driver = webdriver.Chrome()
+    # driver = webdriver.Chrome()
+    driver = webdriver.Firefox()
     lista = ['100-100000252BOX','BX8070811400', 'BX8070811700K']
     scrape(driver, lista)
 
