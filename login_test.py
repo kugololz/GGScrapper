@@ -42,7 +42,7 @@ def scrape(driver, lista_de_busqueda):
     login(driver)
     
     for search_query in lista_de_busqueda:
-        search_input = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, 'busqueda_libre')))
+        search_input = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, 'codigo_fabricante')))
         search_input.clear()
         search_input.send_keys(search_query)
         search_input.send_keys(Keys.ENTER)
