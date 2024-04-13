@@ -1,3 +1,4 @@
+import time
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -7,6 +8,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
 
 def is_exis_span(element):
     return element.name == 'span' and 'EXIS' in element.get_text()
@@ -17,7 +19,6 @@ def decode(text):
 url = 'https://me2.grupocva.com/me/'
 
 def login(driver):
-    
     driver.get('https://me2.grupocva.com/me/inicio.php#')
 
     login_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, 'top-login-nav-trigger')))
@@ -37,58 +38,75 @@ def login(driver):
     submit_button.click()
 
     WebDriverWait(driver, 10).until(EC.url_to_be('https://me2.grupocva.com/me/'))
+
     print('Login successful')
 
-# def scrape(driver, lista_de_busqueda):
-#     login(driver)
-#     for search_query in lista_de_busqueda:
-#         search_input = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, 'busqueda_libre')))
-#         search_input.clear()
-#         search_input.send_keys(search_query)
-#         search_input.send_keys(Keys.ENTER)        
-#         item = WebDriverWait(driver,10).until(EC.visibility_of_element_located((By.ID, 'get-pedidos')))
-#         soup = BeautifulSoup(driver.page_source, 'html.parser')
-#         stock_elements = soup.find_all('span', class_='mdl-card__stock')
-        
-#         for stock_element in stock_elements:
-#             exis_span = soup.find(is_exis_span)
-
-#             if exis_span:       
-#                 # Extract the text content of the span element
-#                 stock_text = exis_span.get_text(strip=True)
-
-#                 # Split the text to separate "EXIS" and the numeric value
-#                 exis_text = ""
-#                 numeric_value = ""
-#                 for char in stock_text:
-#                     if char.isdigit():
-#                         numeric_value += char
-#                     else:
-#                         exis_text += char
-
-#                 stock_amount = numeric_value.strip()
-            
-#             if stock_amount != '0':
-#                 print("Existen ", stock_amount, " en stock.")
-#             else:
-#                 print("No hay productos en stock")
-
-def select_category(driver, category):
-    category_select = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, 'menu-{}'.format(category))))
-    category_select.click()
+def select_category(driver, xpath_complete):
+    category_select = driver.find_element(By.ID, 'send-search-filters')
+    
+    category_select = category_select.find_element(By.XPATH, xpath_complete)
+    driver.execute_script("arguments[0].click();", category_select)
+    # category_select.click()
+    button_search = driver.find_element(By.ID, 'send-search-filters')
+    button_search.click()
 
 def scrape_cpu(driver):
     login(driver)
+    xpath_complete = "/html/body/main/aside/div/div/div/div[2]/div/div/div/form/div[4]/div/div/label[88]/input"
     driver.get(url)
-    input('Press enter to continue...')
-    try:
-        print('')
-    except Exception as e:
-        print('An error ocurred: ', e)
+    select_category(driver, xpath_complete) 
+    WebDriverWait(driver, 60).until(EC.visibility_of_element_located((By.ID, 'get-pedidos')))
+    
+    time.sleep(10)
+    
+    get_card_data = BeautifulSoup(driver.page_source, 'html.parser')
+    info_elements = get_card_data.find_all('div', class_='demo-card-square mdl-card mdl-shadow--2dp col-md-3 no-padding')
+    stock_elements = get_card_data.find_all('span', class_='mdl-card__stock')
+
+    # print(stock_elements)
+
+    with open('cpu_stock_info.txt', 'w') as f:
+        for element in info_elements:
+            f.write(str(element))
+
+    with open('stock_info.txt', 'w') as f:
+        for element in stock_elements:
+            f.write(str(element))
+
+    c = 1
+    for element in stock_elements:
+        exis_span = get_card_data.find(is_exis_span)
+        print(exis_span)
+        # if c%2 != 0:
+
+        #     if exis_span:
+        #         stock_text = exis_span.get_text(strip=True)
+        #         print("Stock " + stock_text)
+        #         exis_text = ""
+        #         numeric_value = ""
+        #         for char in stock_text:
+        #             if char.isnumeric():
+        #                 numeric_value += char
+        #             else:
+        #                 exis_text += char
+        #         stock_amount = numeric_value.strip()
+        #         print("Total " + stock_amount)
+        #     # if stock_amount != 0:
+        #     #     print("Existen ", stock_amount, " en stock.")
+        #     # else: 
+        #     #     print("No hay productos en el stock local")
+        #     c += 1
+        # else:
+           # c += 1
 
 if __name__ == '__main__':
+    # Inicialización de la configuración del navegador
+    options = webdriver.ChromeOptions()
+    options.add_argument('start-maximized')
+    options.add_argument("disable-infobars")
+    options.add_argument("--disable-extensions")
     # Inicialización del driver
-    driver = webdriver.Chrome()
+    driver = webdriver.Chrome(options=options)
     # driver = webdriver.Firefox()
     # lista = ['100-100000252BOX','BX8070811400', 'BX8070811700K']
     # scrape(driver, lista)
